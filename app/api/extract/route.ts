@@ -1,57 +1,84 @@
 import { NextResponse } from 'next/server';
 
-// This points to where Ollama will be running (your EC2 instance or local machine)
-const OLLAMA_API_URL = process.env.OLLAMA_URL || 'http://localhost:11434/api/chat';
-
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
-    const { transcript, schema } = await request.json();
+    // 1. Parse the incoming text from your frontend voice recorder
+    const { text } = await request.json();
 
-    // 1. Tell Llama 3 exactly how to behave
-    const systemPrompt = `You are a precise data extraction engine. Your sole task is to extract field values from an interview transcript based on a provided schema definition.
-    Rules:
-    1. Output MUST be a single JSON object where the keys exactly match the "id" fields provided in the schema.
-    2. If a field is missing from the transcript, set its value to null. Do not invent data.
-    3. Output ONLY raw valid JSON. No conversational text, no markdown backticks.`;
+    if (!text || text.trim() === "") {
+      return NextResponse.json({
+        fullName: 'Not provided',
+        currentRole: 'Not provided',
+        yearsOfExperience: 'Not provided',
+        primarySkills: 'Not provided',
+        careerGoals: 'No transcript data received.'
+      });
+    }
 
-    // 2. Give Llama 3 your current custom form layout and the text it needs to read
-    const userPrompt = `
-Schema Layout:
-${JSON.stringify(schema, null, 2)}
+    // 2. Point to your AWS EC2 instance running your Ollama container
+    // It is best practice to use an environment variable, fallback to your IP string if needed
+    const AWS_EC2_IP = process.env.AWS_BACKEND_IP || "YOUR_AWS_EC2_PUBLIC_IP"; 
+    const OLLAMA_ENDPOINT = `http://${AWS_EC2_IP}:11434/api/generate`;
 
-Interview Transcript:
-"${transcript}"
+    // 3. Construct a precise system prompt mapping out the new Career Profile schema
+    const systemPrompt = `
+      You are an expert recruitment assistant. Your job is to extract professional information from the text transcript of a career interview.
+      
+      You must extract values for these exact keys:
+      - "fullName": The candidate's name.
+      - "currentRole": Their current job title, profession, or current field of study.
+      - "yearsOfExperience": How long they have worked in their industry or role.
+      - "primarySkills": A comma-separated list of technical tools, programming languages, or core professional skills mentioned.
+      - "careerGoals": A short 1-sentence summary of their future aspirations or what they want to achieve.
+
+      Strict rules:
+      - Fill missing keys with "Not provided".
+      - Return ONLY a valid, raw JSON object. 
+      - Do not wrap the JSON object in markdown blocks like \`\`\`json. 
+      - Do not include any introductory text, pleasantries, or explanations.
     `;
 
-    // 3. Send it off to Ollama
-    const response = await fetch(OLLAMA_API_URL, {
+    // 4. Dispatch payload to Ollama utilizing strict native JSON parsing format
+    const ollamaResponse = await fetch(OLLAMA_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama3', 
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
+        model: 'llama3.2:3b', // Matches your current optimized CPU weights
+        prompt: `Interview Transcript:\n"${text}"`,
+        system: systemPrompt,
         stream: false,
-        format: 'json' // This forces Llama 3 to output clean data without text fluff
-      })
+        format: 'json' // This tells Ollama to strictly lock the model inside an output schema
+      }),
     });
 
-    if (!response.ok) {
-      return NextResponse.json({ error: 'Ollama communication failed' }, { status: 500 });
+    if (!ollamaResponse.ok) {
+      throw new Error(`Ollama instance connection error: ${ollamaResponse.statusText}`);
     }
 
-    const data = await response.json();
-    const rawContent = data.message?.content;
+    const ollamaData = await ollamaResponse.json();
     
-    // Parse the text back into a real object to send to your frontend panels
-    const extractedData = JSON.parse(rawContent);
+    // 5. Clean and unpack the raw response string into structured JSON
+    const cleanJsonOutput = JSON.parse(ollamaData.response.trim());
 
-    return NextResponse.json({ success: true, data: extractedData });
+    // 6. Safely return the structured object right back to your frontend states
+    return NextResponse.json({
+      fullName: cleanJsonOutput.fullName || 'Not provided',
+      currentRole: cleanJsonOutput.currentRole || 'Not provided',
+      yearsOfExperience: cleanJsonOutput.yearsOfExperience || 'Not provided',
+      primarySkills: cleanJsonOutput.primarySkills || 'Not provided',
+      careerGoals: cleanJsonOutput.careerGoals || 'Uncertain'
+    });
 
   } catch (error) {
-    console.error('Extraction error:', error);
-    return NextResponse.json({ error: 'Failed to process transcript' }, { status: 500 });
+    console.error('Critical failure in extraction pipeline:', error);
+    
+    // Fallback object keeps your application UI from crashing if a connection times out
+    return NextResponse.json({
+      fullName: 'System Error',
+      currentRole: 'Pipeline failed',
+      yearsOfExperience: 'None',
+      primarySkills: 'None',
+      careerGoals: `Error log context: ${error.message}`
+    }, { status: 500 });
   }
 }

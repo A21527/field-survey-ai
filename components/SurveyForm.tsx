@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function FieldSurveyAI() {
+export default function CareerSurveyAI() {
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState('transcript'); // 'survey' or 'transcript'
 
@@ -13,25 +13,22 @@ export default function FieldSurveyAI() {
   const [transcriptLines, setTranscriptLines] = useState(0);
   const [aiStatus, setAiStatus] = useState('Ready');
 
-  // Form Field States
+  // Form Field States (Updated for Career, Experience & Skills Tracking)
   const [formData, setFormData] = useState({
-    respondentName: '',
-    age: '',
+    fullName: '',
     currentRole: '',
-    industry: '',
-    yearsExperience: '',
-    recentFocus: '',
-    careerGoals: '',
-    satisfactionLevel: 'Awaiting evaluation...'
+    yearsOfExperience: '',
+    primarySkills: '',
+    careerGoals: 'Awaiting interview parsing...'
   });
 
   // Transcription & Logs Output
   const [transcriptText, setTranscriptText] = useState('Awaiting microphone recording input...');
   const [engineLogs, setEngineLogs] = useState([
-    '// Real-time structured pipelines running.',
-    '> Llama 3 extraction engine idle.',
-    '> Loaded model weights: Llama-3-8B-Instruct',
-    '> JSON response schemas mapped'
+    '// Real-time professional parsing pipelines running.',
+    '> Ollama data extraction engine idle.',
+    '> Loaded model weights: Llama-3.2-3B',
+    '> Structured profile mapping ready.'
   ]);
 
   // Recording References
@@ -53,28 +50,25 @@ export default function FieldSurveyAI() {
     return () => clearInterval(timerRef.current);
   }, [isRecording]);
 
-  // Formats seconds into a standard 00:00 string
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
     return `${mins}:${secs}`;
   };
 
-  // --- Core Audio Capturing Engine ---
+  // --- Core Audio Capturing Engine (Adaptive Mobile-Safe Setup) ---
   const startVoiceCapture = async () => {
     try {
-      // 1. Reset metrics
       setRecordingDuration(0);
       audioChunksRef.current = [];
       
-      // 2. Request explicit media access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // 3. Adaptive Codec Extraction Strategy (Forces off broken Ogg/Opus streams on mobile devices)
       let chosenMimeType = '';
       let fileExt = 'webm';
 
+      // Cross-browser mobile safe check overrides broken Ogg containers on phone browsers
       if (MediaRecorder.isTypeSupported('audio/webm; codecs=opus')) {
         chosenMimeType = 'audio/webm; codecs=opus';
         fileExt = 'webm';
@@ -82,17 +76,15 @@ export default function FieldSurveyAI() {
         chosenMimeType = 'audio/webm';
         fileExt = 'webm';
       } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        chosenMimeType = 'audio/mp4'; // Native hardware standard fallback for Apple Safari/iOS
+        chosenMimeType = 'audio/mp4'; 
         fileExt = 'mp4';
       } else if (MediaRecorder.isTypeSupported('audio/wav')) {
         chosenMimeType = 'audio/wav';
         fileExt = 'wav';
       }
 
-      // Display the actual operating system codec directly onto the Telemetry window
       setAudioCompression(chosenMimeType || 'Browser Native Default');
 
-      // 4. Initialize Core Engine Components
       const options = chosenMimeType ? { mimeType: chosenMimeType } : {};
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
@@ -107,19 +99,16 @@ export default function FieldSurveyAI() {
         setSessionStatus('TRANSCRIBING');
         setAiStatus('Processing...');
         
-        // Assemble Binary Blob utilizing the explicitly verified clean mimeType container
         const audioBlob = new Blob(audioChunksRef.current, { type: chosenMimeType || 'audio/webm' });
-        
         await transmitAudioPayload(audioBlob, fileExt);
       };
 
-      // Fire Up Audio Processing Context Hardware
       mediaRecorder.start();
       setIsRecording(true);
       setSessionStatus('RECORDING');
     } catch (err) {
-      console.error('Core audio subsystem initialization failed:', err);
-      alert('Microphone access denied or hardware busy. Verify profile permissions.');
+      console.error('Core audio system initialization failed:', err);
+      alert('Microphone access denied. Check privacy permissions.');
     }
   };
 
@@ -128,7 +117,7 @@ export default function FieldSurveyAI() {
       mediaRecorderRef.current.stop();
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop()); // Instantly release microphone hardware
+      streamRef.current.getTracks().forEach((track) => track.stop());
     }
     setIsRecording(false);
   };
@@ -136,13 +125,12 @@ export default function FieldSurveyAI() {
   // --- Network Backend Pipelines ---
   const transmitAudioPayload = async (audioBlob, fileExtension) => {
     try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob, `survey_recording.${fileExtension}`);
+      const formDataToSend = new FormData();
+      formDataToSend.append('audio', audioBlob, `career_interview.${fileExtension}`);
 
-      // Calls your Vercel local Next.js safe proxy router API
       const response = await fetch('/api/transcribe', {
         method: 'POST',
-        body: formData,
+        body: formDataToSend,
       });
 
       if (!response.ok) throw new Error('Transcription network gateway failure.');
@@ -153,7 +141,6 @@ export default function FieldSurveyAI() {
       setTranscriptText(textOutput);
       setTranscriptLines((prev) => prev + 1);
       
-      // Chain instantly to extraction step
       await extractStructuredData(textOutput);
     } catch (err) {
       setTranscriptText(`Subsystem Error: ${err.message}`);
@@ -175,26 +162,23 @@ export default function FieldSurveyAI() {
 
       const data = await response.json();
       
-      // Update targeted form text fields
+      // Map extracted variables cleanly to your brand-new professional schema
       setFormData({
-        respondentName: data.name || 'Not provided',
-        age: data.age || 'Not provided',
+        fullName: data.fullName || 'Not provided',
         currentRole: data.currentRole || 'Not provided',
-        industry: data.industry || 'Not provided',
-        yearsExperience: data.yearsExperience || 'Not provided',
-        recentFocus: data.recentFocus || 'Not provided',
-        careerGoals: data.careerGoals || 'Not provided',
-        satisfactionLevel: data.satisfaction || 'Uncertain'
+        yearsOfExperience: data.yearsOfExperience || 'Not provided',
+        primarySkills: data.primarySkills || 'Not provided',
+        careerGoals: data.careerGoals || 'Uncertain'
       });
 
       setEngineLogs((prev) => [
         ...prev,
-        `> Structured data extraction completed successfully.`,
-        `> Populated fields: Name="${data.name || ''}", Age="${data.age || ''}"`
+        `> Profile parsed successfully into system model database.`,
+        `> Populated fields: Role="${data.currentRole || ''}", Experience="${data.yearsOfExperience || ''}"`
       ]);
 
     } catch (err) {
-      setEngineLogs((prev) => [...prev, `> Error extracting structures: ${err.message}`]);
+      setEngineLogs((prev) => [...prev, `> Error extracting career metadata: ${err.message}`]);
     } finally {
       setSessionStatus('IDLE');
       setAiStatus('Ready');
@@ -211,7 +195,7 @@ export default function FieldSurveyAI() {
             activeTab === 'survey' ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50/20' : 'text-slate-500 hover:bg-slate-50'
           }`}
         >
-          📋 SURVEY VIEW
+          📋 CAREER PROFILE
         </button>
         <button
           onClick={() => setActiveTab('transcript')}
@@ -235,7 +219,7 @@ export default function FieldSurveyAI() {
             <span className="text-slate-500">Recording Duration</span>
             <span className="text-right font-mono font-bold text-slate-700">{formatTime(recordingDuration)}</span>
 
-            <span className="text-slate-500">Audio Compression</span>
+            <span className="text-slate-500">Audio Codec Stream</span>
             <span className="text-right font-medium text-blue-600 truncate max-w-[180px] block ml-auto">
               {audioCompression}
             </span>
@@ -268,56 +252,34 @@ export default function FieldSurveyAI() {
                 : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
             }`}
           >
-            {isRecording ? '⏹️ Stop Voice Capture' : '🎙️ Start Voice Capture'}
+            {isRecording ? '⏹️ Stop Voice Interview' : '🎙️ Start Voice Interview'}
           </button>
         </div>
 
         {/* View Switch Logic Area */}
         {activeTab === 'survey' ? (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-5">
-            <h3 className="font-bold text-lg border-b border-slate-100 pb-2 text-slate-700">Survey Form Fields</h3>
+            <h3 className="font-bold text-lg border-b border-slate-100 pb-2 text-slate-700">Professional Background</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Respondent Name</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Candidate / Full Name</label>
                 <input
                   type="text"
-                  value={formData.respondentName}
-                  onChange={(e) => setFormData({ ...formData, respondentName: e.target.value })}
-                  placeholder="Awaiting extraction pipeline..."
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  placeholder="e.g., Jane Doe"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Age</label>
-                <input
-                  type="text"
-                  value={formData.age}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                  placeholder="Awaiting extraction pipeline..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Current Role</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Current Profession / Role</label>
                 <input
                   type="text"
                   value={formData.currentRole}
                   onChange={(e) => setFormData({ ...formData, currentRole: e.target.value })}
-                  placeholder="e.g. Product Manager, Software Engineer"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Industry / Sector</label>
-                <input
-                  type="text"
-                  value={formData.industry}
-                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  placeholder="e.g. Healthcare, Fintech, Education"
+                  placeholder="e.g., Software Engineer, Educator"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -326,55 +288,44 @@ export default function FieldSurveyAI() {
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Years of Experience</label>
                 <input
                   type="text"
-                  value={formData.yearsExperience}
-                  onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
-                  placeholder="e.g. 5 years, 12+ years"
+                  value={formData.yearsOfExperience}
+                  onChange={(e) => setFormData({ ...formData, yearsOfExperience: e.target.value })}
+                  placeholder="e.g., 5 years, Entry level"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Recent Focus</label>
-                <textarea
-                  value={formData.recentFocus}
-                  onChange={(e) => setFormData({ ...formData, recentFocus: e.target.value })}
-                  placeholder="What project or responsibility are you focused on now?"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 resize-none min-h-[88px]"
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Core Professional Skills</label>
+                <input
+                  type="text"
+                  value={formData.primarySkills}
+                  onChange={(e) => setFormData({ ...formData, primarySkills: e.target.value })}
+                  placeholder="e.g., React, Python, Network Management"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Career Goals</label>
-                <textarea
-                  value={formData.careerGoals}
-                  onChange={(e) => setFormData({ ...formData, careerGoals: e.target.value })}
-                  placeholder="What are the next professional milestones you are aiming for?"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 resize-none min-h-[88px]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Satisfaction Level</label>
-                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600">
-                  {formData.satisfactionLevel}
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Career Goals & Aspirations</label>
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600 min-h-[60px]">
+                  {formData.careerGoals}
                 </div>
               </div>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Live Text Output Display Box */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-3">
-              <h3 className="text-xs font-bold text-blue-500 tracking-wider uppercase">Interviewee Output</h3>
+              <h3 className="text-xs font-bold text-blue-500 tracking-wider uppercase">Live Interview Audio Output</h3>
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm font-medium text-slate-700 leading-relaxed min-h-[80px]">
                 "{transcriptText}"
               </div>
             </div>
 
-            {/* Neural Network Engine Log Console View */}
             <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 space-y-2">
               <span className="text-xs font-mono text-slate-500 tracking-wider block uppercase">
-                &gt;_ AI Extraction Engine Logs
+                &gt;_ AI Profile Extraction Engine Logs
               </span>
               <div className="font-mono text-xs text-green-400 space-y-1 overflow-x-auto max-h-[160px] leading-relaxed p-1">
                 {engineLogs.map((log, index) => (
