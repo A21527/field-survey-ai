@@ -17,6 +17,11 @@ export default function FieldSurveyAI() {
   const [formData, setFormData] = useState({
     respondentName: '',
     age: '',
+    currentRole: '',
+    industry: '',
+    yearsExperience: '',
+    recentFocus: '',
+    careerGoals: '',
     satisfactionLevel: 'Awaiting evaluation...'
   });
 
@@ -34,7 +39,7 @@ export default function FieldSurveyAI() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Live Timer Count Control
   useEffect(() => {
@@ -174,6 +179,11 @@ export default function FieldSurveyAI() {
       setFormData({
         respondentName: data.name || 'Not provided',
         age: data.age || 'Not provided',
+        currentRole: data.currentRole || 'Not provided',
+        industry: data.industry || 'Not provided',
+        yearsExperience: data.yearsExperience || 'Not provided',
+        recentFocus: data.recentFocus || 'Not provided',
+        careerGoals: data.careerGoals || 'Not provided',
         satisfactionLevel: data.satisfaction || 'Uncertain'
       });
 
@@ -291,6 +301,59 @@ export default function FieldSurveyAI() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Current Role</label>
+                <input
+                  type="text"
+                  value={formData.currentRole}
+                  onChange={(e) => setFormData({ ...formData, currentRole: e.target.value })}
+                  placeholder="e.g. Product Manager, Software Engineer"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Industry / Sector</label>
+                <input
+                  type="text"
+                  value={formData.industry}
+                  onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                  placeholder="e.g. Healthcare, Fintech, Education"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Years of Experience</label>
+                <input
+                  type="text"
+                  value={formData.yearsExperience}
+                  onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
+                  placeholder="e.g. 5 years, 12+ years"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Recent Focus</label>
+                <textarea
+                  value={formData.recentFocus}
+                  onChange={(e) => setFormData({ ...formData, recentFocus: e.target.value })}
+                  placeholder="What project or responsibility are you focused on now?"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 resize-none min-h-[88px]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Career Goals</label>
+                <textarea
+                  value={formData.careerGoals}
+                  onChange={(e) => setFormData({ ...formData, careerGoals: e.target.value })}
+                  placeholder="What are the next professional milestones you are aiming for?"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-blue-500 resize-none min-h-[88px]"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Satisfaction Level</label>
                 <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600">
                   {formData.satisfactionLevel}
@@ -304,7 +367,7 @@ export default function FieldSurveyAI() {
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-3">
               <h3 className="text-xs font-bold text-blue-500 tracking-wider uppercase">Interviewee Output</h3>
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm font-medium text-slate-700 leading-relaxed min-h-[80px]">
-                &quot;{transcriptText}&quot;
+                "{transcriptText}"
               </div>
             </div>
 
