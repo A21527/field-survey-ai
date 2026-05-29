@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     // 1. Parse the incoming text from your frontend voice recorder
     const { text } = await request.json();
@@ -69,8 +69,9 @@ export async function POST(request) {
       careerGoals: cleanJsonOutput.careerGoals || 'Uncertain'
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Critical failure in extraction pipeline:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     // Fallback object keeps your application UI from crashing if a connection times out
     return NextResponse.json({
@@ -78,7 +79,7 @@ export async function POST(request) {
       currentRole: 'Pipeline failed',
       yearsOfExperience: 'None',
       primarySkills: 'None',
-      careerGoals: `Error log context: ${error.message}`
+      careerGoals: `Error log context: ${errorMessage}`
     }, { status: 500 });
   }
 }
