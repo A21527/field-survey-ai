@@ -15,9 +15,9 @@ export async function POST(request: Request) {
       });
     }
 
-    // 2. Point to your AWS EC2 instance running your Ollama container
-    // Use the central OLLAMA_URL env var for cleaner deployment config
-    const OLLAMA_ENDPOINT = process.env.OLLAMA_URL || 'http://51.21.197.50:11434/api/generate';
+    // 2. Point directly to your AWS EC2 instance running Ollama
+    const AWS_EC2_IP = "51.21.197.50";
+    const OLLAMA_ENDPOINT = `http://${AWS_EC2_IP}:11434/api/generate`;
 
     // 3. Construct a precise system prompt mapping out the new Career Profile schema
     const systemPrompt = `
