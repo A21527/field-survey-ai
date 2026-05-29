@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // This will point to your Faster-Whisper container on EC2 later
-const WHISPER_API_URL = process.env.WHISPER_URL || 'http://localhost:4321/v1/audio/transcriptions';
+const WHISPER_API_URL = process.env.WHISPER_URL || 'http://51.21.197.50:8000/v1/audio/transcriptions';
 
 export async function POST(request: Request) {
   try {
